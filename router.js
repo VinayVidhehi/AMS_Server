@@ -170,35 +170,63 @@ const userForgetPassword = async (req, res) => {
 };
 
 
+const imageChunksMap = new Map();
+
 const userUploadImage = async (req, res) => {
   try {
-    const { email, image } = req.body;
+    const { email, chunk, sequenceNumber, isLastChunk } = req.body;
 
-    // Ensure email and image are provided
-    if (!email || !image) {
-      return res.status(400).json({ message: "Email and image are required", key: 0 });
+    // Ensure email and chunk are provided
+    if (!email || !chunk || sequenceNumber === undefined) {
+      return res.status(400).json({ message: "Email, chunk, and sequence number are required", key: 0 });
     }
 
-    // Create a new student image document
-    const uploadStudentImage = new StudentImage({
-      email: email,
-      image_base64: image,
-    });
+    // Initialize the array for the email if it doesn't exist
+    if (!imageChunksMap.has(email)) {
+      imageChunksMap.set(email, []);
+    }
 
-    // Save the document to the database
-    const response = await uploadStudentImage.save();
+    // Store the chunk
+    const chunksArray = imageChunksMap.get(email);
+    chunksArray.push({ sequenceNumber, chunk });
 
-    // Respond based on the success of the save operation
-    if (response) {
-      res.json({ message: "Successfully saved image", key: 1 });
+    // If this is the last chunk, assemble the image
+    if (isLastChunk) {
+      // Sort the chunks based on sequence number
+      chunksArray.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+
+      // Combine the chunks into a single string
+      const combinedImage = chunksArray.map(chunkObj => chunkObj.chunk).join('');
+
+      // Create a new student image document
+      const uploadStudentImage = new StudentImage({
+        email: email,
+        image_base64: combinedImage,
+      });
+
+      // Save the document to the database
+      const response = await uploadStudentImage.save();
+
+      // Clear the chunks from memory
+      imageChunksMap.delete(email);
+
+      // Respond based on the success of the save operation
+      if (response) {
+        res.json({ message: "Successfully saved image", key: 1 });
+      } else {
+        res.status(500).json({ message: "Error while uploading the image, try again later", key: 0 });
+      }
     } else {
-      res.status(500).json({ message: "Error while uploading the image, try again later", key: 0 });
+      res.json({ message: "Chunk received successfully", key: 1 });
     }
   } catch (error) {
     console.error("Error while storing base64 string:", error);
     res.status(500).json({ message: "Internal server error", key: 0 });
   }
-}
+};
+
+
+
 module.exports = {
     userSignup,
     userLogin,
