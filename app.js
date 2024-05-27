@@ -17,6 +17,9 @@ app.post('/login', userLogin);
 app.post('/forget-password', userForgetPassword);
 app.post('/uploadImage', userUploadImage);
 
+app.get('/', (req, res) => {
+  res.json({message:'Face recognition based attendance management system'})
+})
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
