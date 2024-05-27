@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const {userLogin, userSignup, userForgetPassword} = require('./router')
+const {userLogin, userSignup, userForgetPassword, userUploadImage} = require('./router')
 require("dotenv").config();
 
 const app = express();
@@ -15,6 +15,8 @@ const PORT = process.env.PORT || 3000;
 app.post('/signup', userSignup);
 app.post('/login', userLogin);
 app.post('/forget-password', userForgetPassword);
+app.post('/uploadImage', userUploadImage);
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

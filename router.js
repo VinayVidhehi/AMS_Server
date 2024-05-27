@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const Student = require('./models/studentLogin');
+const StudentImage = require('./models/studentImage');
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
@@ -168,8 +169,39 @@ const userForgetPassword = async (req, res) => {
   }
 };
 
+
+const userUploadImage = async (req, res) => {
+  try {
+    const { email, image } = req.body;
+
+    // Ensure email and image are provided
+    if (!email || !image) {
+      return res.status(400).json({ message: "Email and image are required", key: 0 });
+    }
+
+    // Create a new student image document
+    const uploadStudentImage = new StudentImage({
+      email: email,
+      image_base64: image,
+    });
+
+    // Save the document to the database
+    const response = await uploadStudentImage.save();
+
+    // Respond based on the success of the save operation
+    if (response) {
+      res.json({ message: "Successfully saved image", key: 1 });
+    } else {
+      res.status(500).json({ message: "Error while uploading the image, try again later", key: 0 });
+    }
+  } catch (error) {
+    console.error("Error while storing base64 string:", error);
+    res.status(500).json({ message: "Internal server error", key: 0 });
+  }
+}
 module.exports = {
     userSignup,
     userLogin,
     userForgetPassword,
+    userUploadImage,
 }

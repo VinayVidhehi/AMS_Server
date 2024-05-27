@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 // Schema for student embeddings and image data
 const studentSchema = new mongoose.Schema({
-    student_id: {
+    email: {
         type: String,
         required: true,
         unique: true,
@@ -18,6 +18,6 @@ const studentSchema = new mongoose.Schema({
     }
 });
 
-const Student = mongoose.model('Student', studentSchema);
+const Student = mongoose.model('StudentImage', studentSchema);
 
 module.exports = Student;
