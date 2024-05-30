@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const {userLogin, userSignup, userForgetPassword, userUploadImage} = require('./router')
+const {userLogin, userSignup, userForgetPassword, userUploadImage, getUserImage} = require('./router')
 require("dotenv").config();
 
 const app = express();
@@ -16,6 +16,7 @@ app.post('/signup', userSignup);
 app.post('/login', userLogin);
 app.post('/forget-password', userForgetPassword);
 app.post('/uploadImage', userUploadImage);
+app.post('/getImage', getUserImage);
 
 app.get('/', (req, res) => {
   res.json({message:'Face recognition based attendance management system'})

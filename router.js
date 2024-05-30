@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
-const Student = require('./models/studentLogin');
-const StudentImage = require('./models/studentImage');
+const Student = require("./models/studentLogin");
+const StudentImage = require("./models/studentImage");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
@@ -56,7 +56,6 @@ async function sendEmail(email, otp) {
   }
 }
 
-
 const userSignup = async (req, res) => {
   const { key } = req.body;
 
@@ -66,83 +65,99 @@ const userSignup = async (req, res) => {
     if (key == 0) {
       //take user email from request
       const { email } = req.body;
-      
+
       const foundEmail = await Student.findOne({ email });
 
       //if email found ask them to login instead
       if (foundEmail != undefined || foundEmail != null) {
         res.json({
           message: "entered email is already registered, please login instead",
-        key:0});
-      }
-
-      else {
+          key: 0,
+        });
+      } else {
         //here if there is a otp in the array with this email previously delete it
-      array = array.filter((userOtp) => userOtp.email != email);
+        array = array.filter((userOtp) => userOtp.email != email);
 
-      const otp = generateOTP();
-      array.push({ email, otp });
-      console.log("the array is ",array, email);
-      const response = sendEmail(email, otp);
-      if(response == 0) res.json({message:'error while sending otp, please try again later', key:0});
-      else res.json({message:'otp sent successfully, please check your mail and enter the otp to proceed', key:1})
+        const otp = generateOTP();
+        array.push({ email, otp });
+        console.log("the array is ", array, email);
+        const response = sendEmail(email, otp);
+        if (response == 0)
+          res.json({
+            message: "error while sending otp, please try again later",
+            key: 0,
+          });
+        else
+          res.json({
+            message:
+              "otp sent successfully, please check your mail and enter the otp to proceed",
+            key: 1,
+          });
       }
     }
 
     //check whether otp matches or not
     else if (key == 1) {
-      const {otp, email} = req.body;
-            
+      const { otp, email } = req.body;
+
       const storedOtp = array.find((userOtp) => userOtp.email == email);
-      console.log("stored otp is ",storedOtp);
-      if(storedOtp.otp == otp) {
-        res.json({message:"email verified successfully, please fill the details to signup", key : 1});
-      }
-      else {
-        res.json({message:"entered otp does not match, please check and try again", key:0});
+      console.log("stored otp is ", storedOtp);
+      if (storedOtp.otp == otp) {
+        res.json({
+          message:
+            "email verified successfully, please fill the details to signup",
+          key: 1,
+        });
+      } else {
+        res.json({
+          message: "entered otp does not match, please check and try again",
+          key: 0,
+        });
       }
     }
   }
 
   //save credentials once email verified
   else {
-    const {email, name, password, usn} = req.body;
+    const { email, name, password, usn } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new Student({
       email,
       name,
-      student_id:usn,
-      password:hashedPassword,
-    })
+      student_id: usn,
+      password: hashedPassword,
+    });
 
     const response = await newUser.save();
     console.log("reesponse for saving user is ", response);
-    res.json({message:"crendentials stored successfully, enjoy food within your budget", key:1})
+    res.json({
+      message:
+        "crendentials stored successfully, enjoy food within your budget",
+      key: 1,
+    });
   }
 };
 
 const userLogin = async (req, res) => {
-  const {email, password} = req.body;
+  const { email, password } = req.body;
 
-  const user = await Student.findOne({email});
+  const user = await Student.findOne({ email });
   console.log("user is", email, password);
 
-  if(user == null || user == undefined) {
+  if (user == null || user == undefined) {
     console.log("not found babe");
-    res.json({message:"user not found, please signup", key:0});
+    res.json({ message: "user not found, please signup", key: 0 });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
 
-  if(isMatch){
-    console.log("at login succesful")
-    res.json({message:"Login successful", key:1});
+  if (isMatch) {
+    console.log("at login succesful");
+    res.json({ message: "Login successful", key: 1 });
+  } else {
+    res.json({ message: "wrong password, try again", key: 0 });
   }
-
-  else {
-    res.json({message:"wrong password, try again", key:0});
-  }
-}
+};
 
 const userForgetPassword = async (req, res) => {
   const { email, newPassword } = req.body;
@@ -153,7 +168,10 @@ const userForgetPassword = async (req, res) => {
 
     // If user not found, return error message
     if (!userFound) {
-      return res.json({ message: "User not found. Please sign up first.", key:0 });
+      return res.json({
+        message: "User not found. Please sign up first.",
+        key: 0,
+      });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -161,14 +179,13 @@ const userForgetPassword = async (req, res) => {
     await Student.findOneAndUpdate({ email }, { password: hashedPassword });
 
     // Return success message
-    return res.json({ message: "Password updated successfully.", key:1 });
+    return res.json({ message: "Password updated successfully.", key: 1 });
   } catch (error) {
     // Handle errors
     console.error("Error updating password:", error);
-    return res.status(500).json({ message: "Internal server error", key:0 });
+    return res.status(500).json({ message: "Internal server error", key: 0 });
   }
 };
-
 
 const imageChunksMap = new Map();
 
@@ -178,7 +195,10 @@ const userUploadImage = async (req, res) => {
 
     // Ensure email and chunk are provided
     if (!email || !chunk || sequenceNumber === undefined) {
-      return res.status(400).json({ message: "Email, chunk, and sequence number are required", key: 0 });
+      return res.status(400).json({
+        message: "Email, chunk, and sequence number are required",
+        key: 0,
+      });
     }
 
     // Initialize the array for the email if it doesn't exist
@@ -196,25 +216,38 @@ const userUploadImage = async (req, res) => {
       chunksArray.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 
       // Combine the chunks into a single string
-      const combinedImage = chunksArray.map(chunkObj => chunkObj.chunk).join('');
+      const combinedImage = chunksArray
+        .map((chunkObj) => chunkObj.chunk)
+        .join("");
 
       // Create a new student image document
-      const uploadStudentImage = new StudentImage({
+      const uploadStudentImage = {
         email: email,
         image_base64: combinedImage,
-      });
+      };
 
-      // Save the document to the database
-      const response = await uploadStudentImage.save();
+      // Check if the image already exists for the given email
+      const isUploaded = await StudentImage.findOne({ email });
 
-      // Clear the chunks from memory
-      imageChunksMap.delete(email);
+      let response;
+      if (isUploaded) {
+        // Update the existing document
+        response = await StudentImage.updateOne({ email }, uploadStudentImage);
+      } else {
+        // Save a new document to the database
+        const newImage = new StudentImage(uploadStudentImage);
+        response = await newImage.save();
+      }
 
       // Respond based on the success of the save operation
       if (response) {
         res.json({ message: "Successfully saved image", key: 1 });
+        imageChunksMap.delete(email); // Clear the chunks from memory
       } else {
-        res.status(500).json({ message: "Error while uploading the image, try again later", key: 0 });
+        res.status(500).json({
+          message: "Error while uploading the image, try again later",
+          key: 0,
+        });
       }
     } else {
       res.json({ message: "Chunk received successfully", key: 1 });
@@ -222,14 +255,29 @@ const userUploadImage = async (req, res) => {
   } catch (error) {
     console.error("Error while storing base64 string:", error);
     res.status(500).json({ message: "Internal server error", key: 0 });
+    imageChunksMap.delete(req.body.email); // Clear the chunks on error
   }
 };
 
 
+const getUserImage = async (req, res) => {
+  const { email } = req.body;
+  const response = await StudentImage.findOne({ email });
+  if (response) {
+    res.json({
+      message: "successfully fetched base64 string of the image",
+      image: response.image_base64,
+      key: 1,
+    });
+  } else {
+    res.json({ message: "error fetching image", key: 0 });
+  }
+};
 
 module.exports = {
-    userSignup,
-    userLogin,
-    userForgetPassword,
-    userUploadImage,
-}
+  userSignup,
+  userLogin,
+  userForgetPassword,
+  getUserImage,
+  userUploadImage,
+};
