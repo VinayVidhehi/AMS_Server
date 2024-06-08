@@ -2,6 +2,7 @@ const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const Student = require("./models/studentLogin");
 const StudentImage = require("./models/studentImage");
+const studentQuery = require("./models/userQuery")
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
@@ -274,10 +275,28 @@ const getUserImage = async (req, res) => {
   }
 };
 
+const handleStudentQuery = async(req, res) => {
+  try{
+    const {email, query} = req.body;
+
+  const newStudentQuery = new studentQuery({
+    email,
+    query
+  })
+
+  await newStudentQuery.save();
+  res.send({message:"succesfully stored query", key:1})
+  } catch(error) {
+    console.log("error during student query", error)
+    res.send({message:"unable to store query due to server error", key:0})
+  }
+}
+
 module.exports = {
   userSignup,
   userLogin,
   userForgetPassword,
   getUserImage,
   userUploadImage,
+  handleStudentQuery,
 };
