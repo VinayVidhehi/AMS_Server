@@ -1,8 +1,9 @@
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const Student = require("./models/studentLogin");
+const Teacher = require("./models/teacherLogin");
 const StudentImage = require("./models/studentImage");
-const studentQuery = require("./models/userQuery")
+const studentQuery = require("./models/userQuery");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
@@ -120,71 +121,135 @@ const userSignup = async (req, res) => {
 
   //save credentials once email verified
   else {
-    const { email, name, password, usn } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new Student({
-      email,
-      name,
-      student_id: usn,
-      password: hashedPassword,
-    });
+    const { isStaff } = req.body;
+    if (!isStaff) {
+      const { email, name, password, usn } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new Student({
+        email,
+        name,
+        student_id: usn,
+        password: hashedPassword,
+      });
 
-    const response = await newUser.save();
-    console.log("reesponse for saving user is ", response);
-    res.json({
-      message:
-        "crendentials stored successfully, enjoy food within your budget",
-      key: 1,
-    });
+      const response = await newUser.save();
+      console.log("reesponse for saving user is ", response);
+      res.json({
+        message:
+          "crendentials stored successfully, enjoy food within your budget",
+        key: 1,
+      });
+    } else {
+      const { email, name, password, course } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new Teacher({
+        email,
+        name,
+        course_id: course,
+        password: hashedPassword,
+      });
+
+      const response = await newUser.save();
+      console.log("reesponse for saving user is ", response);
+      res.json({
+        message:
+          "crendentials stored successfully, enjoy food within your budget",
+        key: 1,
+      });
+    }
   }
 };
 
 const userLogin = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, isStaff } = req.body;
 
-  const user = await Student.findOne({ email });
-  console.log("user is", email, password);
+  if (!isStaff) {
+    const user = await Student.findOne({ email });
+    console.log("user is", email, password);
 
-  if (user == null || user == undefined) {
-    console.log("not found babe");
-    res.json({ message: "user not found, please signup", key: 0 });
-  }
+    if (user == null || user == undefined) {
+      console.log("not found babe");
+      res.json({ message: "user not found, please signup", key: 0 });
+    }
 
-  const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
 
-  if (isMatch) {
-    console.log("at login succesful");
-    res.json({ message: "Login successful", key: 1 });
+    if (isMatch) {
+      console.log("at login succesful");
+      res.json({ message: "Login successful", key: 1 });
+    } else {
+      res.json({ message: "wrong password, try again", key: 0 });
+    }
   } else {
-    res.json({ message: "wrong password, try again", key: 0 });
+    const user = await Teacher.findOne({ email });
+    console.log("user is", email, password);
+
+    if (user == null || user == undefined) {
+      console.log("not found babe");
+      res.json({ message: "user not found, please signup", key: 0 });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (isMatch) {
+      console.log("at login succesful");
+      res.json({ message: "Login successful", key: 1 });
+    } else {
+      res.json({ message: "wrong password, try again", key: 0 });
+    }
   }
 };
 
 const userForgetPassword = async (req, res) => {
-  const { email, newPassword } = req.body;
+  const { email, newPassword, isStaff } = req.body;
+  if (!isStaff) {
+    try {
+      // Find the user by email
+      const userFound = await Student.findOne({ email });
 
-  try {
-    // Find the user by email
-    const userFound = await Student.findOne({ email });
+      // If user not found, return error message
+      if (!userFound) {
+        return res.json({
+          message: "User not found. Please sign up first.",
+          key: 0,
+        });
+      }
 
-    // If user not found, return error message
-    if (!userFound) {
-      return res.json({
-        message: "User not found. Please sign up first.",
-        key: 0,
-      });
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      // Update the user's password
+      await Student.findOneAndUpdate({ email }, { password: hashedPassword });
+
+      // Return success message
+      return res.json({ message: "Password updated successfully.", key: 1 });
+    } catch (error) {
+      // Handle errors
+      console.error("Error updating password:", error);
+      return res.status(500).json({ message: "Internal server error", key: 0 });
     }
+  } else {
+    try {
+      // Find the user by email
+      const userFound = await Teacher.findOne({ email });
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    // Update the user's password
-    await Student.findOneAndUpdate({ email }, { password: hashedPassword });
+      // If user not found, return error message
+      if (!userFound) {
+        return res.json({
+          message: "User not found. Please sign up first.",
+          key: 0,
+        });
+      }
 
-    // Return success message
-    return res.json({ message: "Password updated successfully.", key: 1 });
-  } catch (error) {
-    // Handle errors
-    console.error("Error updating password:", error);
-    return res.status(500).json({ message: "Internal server error", key: 0 });
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      // Update the user's password
+      await Teacher.findOneAndUpdate({ email }, { password: hashedPassword });
+
+      // Return success message
+      return res.json({ message: "Password updated successfully.", key: 1 });
+    } catch (error) {
+      // Handle errors
+      console.error("Error updating password:", error);
+      return res.status(500).json({ message: "Internal server error", key: 0 });
+    }
   }
 };
 
@@ -260,7 +325,6 @@ const userUploadImage = async (req, res) => {
   }
 };
 
-
 const getUserImage = async (req, res) => {
   const { email } = req.body;
   const response = await StudentImage.findOne({ email });
@@ -275,22 +339,22 @@ const getUserImage = async (req, res) => {
   }
 };
 
-const handleStudentQuery = async(req, res) => {
-  try{
-    const {email, query} = req.body;
+const handleStudentQuery = async (req, res) => {
+  try {
+    const { email, query } = req.body;
 
-  const newStudentQuery = new studentQuery({
-    email,
-    query
-  })
+    const newStudentQuery = new studentQuery({
+      email,
+      query,
+    });
 
-  await newStudentQuery.save();
-  res.send({message:"succesfully stored query", key:1})
-  } catch(error) {
-    console.log("error during student query", error)
-    res.send({message:"unable to store query due to server error", key:0})
+    await newStudentQuery.save();
+    res.send({ message: "succesfully stored query", key: 1 });
+  } catch (error) {
+    console.log("error during student query", error);
+    res.send({ message: "unable to store query due to server error", key: 0 });
   }
-}
+};
 
 module.exports = {
   userSignup,

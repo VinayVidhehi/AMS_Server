@@ -12,17 +12,13 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
 
 //all post requests here
-app.post('/student/signup', userSignup);
-app.post('/student/login', userLogin);
-app.post('/student/forget-password', userForgetPassword);
-app.post('/teacher/uploadImage', userUploadImage);
-app.post('/teacher/getImage', getUserImage);
-app.post('/teacher/signup', userSignup);
-app.post('/teacher/login', userLogin);
+app.post('/signup', userSignup);
+app.post('/login', userLogin);
+app.post('/forget-password', userForgetPassword);
+app.post('/staff/uploadImage', userUploadImage);
+app.post('/staff/getImage', getUserImage);
 app.post('/query', handleStudentQuery);
 
-app.get('/student/attendance', );
-app.get('/teacher/attendance', );
 app.get('/server', (req, res) => {
   res.json({messgae:"server is up", key:1});
 })
