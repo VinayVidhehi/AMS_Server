@@ -142,10 +142,11 @@ const userSignup = async (req, res) => {
     } else {
       const { email, name, password, course } = req.body;
       const hashedPassword = await bcrypt.hash(password, 10);
+      console.log("details are", email, course)
       const newUser = new Teacher({
         email,
         name,
-        course_id: course,
+        course,
         password: hashedPassword,
       });
 
@@ -169,7 +170,7 @@ const userLogin = async (req, res) => {
 
     if (user == null || user == undefined) {
       console.log("not found babe");
-      res.json({ message: "user not found, please signup", key: 0 });
+      return res.json({ message: "user not found, please signup", key: 0 });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -178,7 +179,7 @@ const userLogin = async (req, res) => {
       console.log("at login succesful");
       res.json({ message: "Login successful", key: 1 });
     } else {
-      res.json({ message: "wrong password, try again", key: 0 });
+      return res.json({ message: "wrong password, try again", key: 0 });
     }
   } else {
     const user = await Teacher.findOne({ email });
@@ -186,7 +187,7 @@ const userLogin = async (req, res) => {
 
     if (user == null || user == undefined) {
       console.log("not found babe");
-      res.json({ message: "user not found, please signup", key: 0 });
+      return res.json({ message: "user not found, please signup", key: 0 });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -195,7 +196,7 @@ const userLogin = async (req, res) => {
       console.log("at login succesful");
       res.json({ message: "Login successful", key: 1 });
     } else {
-      res.json({ message: "wrong password, try again", key: 0 });
+      return res.json({ message: "wrong password, try again", key: 0 });
     }
   }
 };
