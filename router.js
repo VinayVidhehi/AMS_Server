@@ -5,6 +5,7 @@ const Teacher = require("./models/teacherLogin");
 const StudentImage = require("./models/studentImage");
 const studentQuery = require("./models/userQuery");
 const bcrypt = require("bcryptjs");
+const NgrokUrl = require("./models/ngrok_url");
 require("dotenv").config();
 
 let array = [];
@@ -357,6 +358,16 @@ const handleStudentQuery = async (req, res) => {
   }
 };
 
+const fetchServerString = async(req, res) => {
+  const {email} = req.query;
+
+  const user = await Teacher.findOne({email});
+  if(user) {
+    const response = await NgrokUrl.findOne();
+    res.json({message:"succesfully fetched url", url:response.ngrok_url, key:1}) 
+  }
+}
+
 module.exports = {
   userSignup,
   userLogin,
@@ -364,4 +375,5 @@ module.exports = {
   getUserImage,
   userUploadImage,
   handleStudentQuery,
+  fetchServerString,
 };

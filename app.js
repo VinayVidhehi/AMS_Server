@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const {userLogin, userSignup, userForgetPassword, userUploadImage, getUserImage, handleStudentQuery} = require('./router')
+const {userLogin, userSignup, userForgetPassword, userUploadImage, getUserImage, handleStudentQuery, fetchServerString} = require('./router')
 require("dotenv").config();
 
 const app = express();
@@ -26,6 +26,8 @@ app.get('/server', (req, res) => {
 app.get('/', (req, res) => {
   res.json({message:'Face recognition based attendance management system'})
 })
+
+app.get('/server-string', fetchServerString);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
