@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Teacher = require("./models/teacherSchema");
 const studentQuery = require("./models/userQuery");
 const bcrypt = require("bcryptjs");
+const NgrokUrl = require("./models/ngrok_url");
 require("dotenv").config();
 
 let array = [];
@@ -118,45 +119,46 @@ const userSignup = async (req, res) => {
   }
 
   //save credentials once email verified
-  else {
-    const { email, name, password} = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new Teacher({
-      email,
-      name,
-      password: hashedPassword,
-    });
+else {
+      const { email, name, password, course } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      console.log("details are", email, course)
+      const newUser = new Teacher({
+        email,
+        name,
+        course,
+        password: hashedPassword,
+      });
 
-    const response = await newUser.save();
-    console.log("response for saving user is ", response);
-    res.json({
-      message:
-        "crendentials stored successfully, its time for attendance !",
-      key: 1,
-    });
+      const response = await newUser.save();
+      console.log("reesponse for saving user is ", response);
+      res.json({
+        message:
+          "crendentials stored successfully, enjoy food within your budget",
+        key: 1,
+      });
+    }
   }
-};
 
 const userLogin = async (req, res) => {
   const { email, password } = req.body;
+    const user = await Teacher.findOne({ email });
+    console.log("user is", email, password);
 
-  const user = await Teacher.findOne({ email });
-  console.log("user is", email, password);
+    if (user == null || user == undefined) {
+      console.log("not found babe");
+      return res.json({ message: "user not found, please signup", key: 0 });
+    }
 
-  if (user == null || user == undefined) {
-    console.log("not found babe");
-    return res.json({ message: "user not found, please signup", key: 0 });
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (isMatch) {
+      console.log("at login succesful");
+      res.json({ message: "Login successful", key: 1 });
+    } else {
+      return res.json({ message: "wrong password, try again", key: 0 });
+    }
   }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (isMatch) {
-    console.log("at login succesful");
-    res.json({ message: "Login successful", key: 1 });
-  } else {
-    return res.json({ message: "wrong password, try again", key: 0 });
-  }
-};
 
 const userForgetPassword = async (req, res) => {
   const { email, newPassword, isStaff } = req.body;
@@ -293,6 +295,15 @@ const handleFetchFacultyCourses = async (req, res) => {
   }
 };
 
+const fetchServerString = async(req, res) => {
+  const {email} = req.query;
+
+  const user = await Teacher.findOne({email});
+  if(user) {
+    const response = await NgrokUrl.findOne();
+    res.json({message:"succesfully fetched url", url:response.ngrok_url, key:1}) 
+  }
+}
 
 module.exports = {
   userSignup,
@@ -301,4 +312,5 @@ module.exports = {
   handleStudentQuery,
   handleAddFacultyCourse,
   handleFetchFacultyCourses,
+  fetchServerString,
 };
