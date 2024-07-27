@@ -1,8 +1,6 @@
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
-const Student = require("./models/studentLogin");
-const Teacher = require("./models/teacherLogin");
-const StudentImage = require("./models/studentImage");
+const Teacher = require("./models/teacherSchema");
 const studentQuery = require("./models/userQuery");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
@@ -68,7 +66,7 @@ const userSignup = async (req, res) => {
       //take user email from request
       const { email } = req.body;
 
-      const foundEmail = await Student.findOne({ email });
+      const foundEmail = await Teacher.findOne({ email })
 
       //if email found ask them to login instead
       if (foundEmail != undefined || foundEmail != null) {
@@ -121,82 +119,42 @@ const userSignup = async (req, res) => {
 
   //save credentials once email verified
   else {
-    const { isStaff } = req.body;
-    if (!isStaff) {
-      const { email, name, password, usn } = req.body;
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser = new Student({
-        email,
-        name,
-        student_id: usn,
-        password: hashedPassword,
-      });
+    const { email, name, password} = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new Teacher({
+      email,
+      name,
+      password: hashedPassword,
+    });
 
-      const response = await newUser.save();
-      console.log("reesponse for saving user is ", response);
-      res.json({
-        message:
-          "crendentials stored successfully, enjoy food within your budget",
-        key: 1,
-      });
-    } else {
-      const { email, name, password, course } = req.body;
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser = new Teacher({
-        email,
-        name,
-        course_id: course,
-        password: hashedPassword,
-      });
-
-      const response = await newUser.save();
-      console.log("reesponse for saving user is ", response);
-      res.json({
-        message:
-          "crendentials stored successfully, enjoy food within your budget",
-        key: 1,
-      });
-    }
+    const response = await newUser.save();
+    console.log("response for saving user is ", response);
+    res.json({
+      message:
+        "crendentials stored successfully, its time for attendance !",
+      key: 1,
+    });
   }
 };
 
 const userLogin = async (req, res) => {
-  const { email, password, isStaff } = req.body;
+  const { email, password } = req.body;
 
-  if (!isStaff) {
-    const user = await Student.findOne({ email });
-    console.log("user is", email, password);
+  const user = await Teacher.findOne({ email });
+  console.log("user is", email, password);
 
-    if (user == null || user == undefined) {
-      console.log("not found babe");
-      res.json({ message: "user not found, please signup", key: 0 });
-    }
+  if (user == null || user == undefined) {
+    console.log("not found babe");
+    return res.json({ message: "user not found, please signup", key: 0 });
+  }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(password, user.password);
 
-    if (isMatch) {
-      console.log("at login succesful");
-      res.json({ message: "Login successful", key: 1 });
-    } else {
-      res.json({ message: "wrong password, try again", key: 0 });
-    }
+  if (isMatch) {
+    console.log("at login succesful");
+    res.json({ message: "Login successful", key: 1 });
   } else {
-    const user = await Teacher.findOne({ email });
-    console.log("user is", email, password);
-
-    if (user == null || user == undefined) {
-      console.log("not found babe");
-      res.json({ message: "user not found, please signup", key: 0 });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (isMatch) {
-      console.log("at login succesful");
-      res.json({ message: "Login successful", key: 1 });
-    } else {
-      res.json({ message: "wrong password, try again", key: 0 });
-    }
+    return res.json({ message: "wrong password, try again", key: 0 });
   }
 };
 
@@ -253,92 +211,6 @@ const userForgetPassword = async (req, res) => {
   }
 };
 
-const imageChunksMap = new Map();
-
-const userUploadImage = async (req, res) => {
-  try {
-    const { email, chunk, sequenceNumber, isLastChunk } = req.body;
-
-    // Ensure email and chunk are provided
-    if (!email || !chunk || sequenceNumber === undefined) {
-      return res.status(400).json({
-        message: "Email, chunk, and sequence number are required",
-        key: 0,
-      });
-    }
-
-    // Initialize the array for the email if it doesn't exist
-    if (!imageChunksMap.has(email)) {
-      imageChunksMap.set(email, []);
-    }
-
-    // Store the chunk
-    const chunksArray = imageChunksMap.get(email);
-    chunksArray.push({ sequenceNumber, chunk });
-
-    // If this is the last chunk, assemble the image
-    if (isLastChunk) {
-      // Sort the chunks based on sequence number
-      chunksArray.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
-
-      // Combine the chunks into a single string
-      const combinedImage = chunksArray
-        .map((chunkObj) => chunkObj.chunk)
-        .join("");
-
-      // Create a new student image document
-      const uploadStudentImage = {
-        email: email,
-        image_base64: combinedImage,
-      };
-
-      // Check if the image already exists for the given email
-      const isUploaded = await StudentImage.findOne({ email });
-
-      let response;
-      if (isUploaded) {
-        // Update the existing document
-        response = await StudentImage.updateOne({ email }, uploadStudentImage);
-      } else {
-        // Save a new document to the database
-        const newImage = new StudentImage(uploadStudentImage);
-        response = await newImage.save();
-      }
-
-      // Respond based on the success of the save operation
-      if (response) {
-        res.json({ message: "Successfully saved image", key: 1 });
-        imageChunksMap.delete(email); // Clear the chunks from memory
-      } else {
-        res.status(500).json({
-          message: "Error while uploading the image, try again later",
-          key: 0,
-        });
-      }
-    } else {
-      res.json({ message: "Chunk received successfully", key: 1 });
-    }
-  } catch (error) {
-    console.error("Error while storing base64 string:", error);
-    res.status(500).json({ message: "Internal server error", key: 0 });
-    imageChunksMap.delete(req.body.email); // Clear the chunks on error
-  }
-};
-
-const getUserImage = async (req, res) => {
-  const { email } = req.body;
-  const response = await StudentImage.findOne({ email });
-  if (response) {
-    res.json({
-      message: "successfully fetched base64 string of the image",
-      image: response.image_base64,
-      key: 1,
-    });
-  } else {
-    res.json({ message: "error fetching image", key: 0 });
-  }
-};
-
 const handleStudentQuery = async (req, res) => {
   try {
     const { email, query } = req.body;
@@ -356,11 +228,77 @@ const handleStudentQuery = async (req, res) => {
   }
 };
 
+const handleAddFacultyCourse = async (req, res) => {
+  const { email, course_details } = req.body;
+
+  try {
+    const response = await Teacher.findOne({ email });
+    if (response) {
+      console.log("type of teacher is, inside adding courses", response, email);
+      const newCourseDetails = [...response.course_details || [], course_details];
+      const courseResponse = await Teacher.findOneAndUpdate(
+        { email },
+        { course_details: newCourseDetails },
+        { new: true }
+      ); // i want course details feild to be updated to newCourseDetails
+      if (courseResponse) {
+        res.json({
+          message: `successfully added course ${course_details.course}`,
+          key: 1,
+        });
+      } else {
+        res.json({
+          message: "unable to update course, try again later",
+          key: 0,
+        });
+      }
+    } else {
+      res.json({ message: "unable to find user", key: 0 });
+    }
+  } catch (error) {
+    console.error("Error updating course details:", error);
+    res
+      .status(500)
+      .json({
+        message: "An error occurred while updating course details",
+        key: 0,
+      });
+  }
+};
+
+const handleFetchFacultyCourses = async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    if (email) {
+      // Find the teacher by email
+      const response = await Teacher.findOne({ email });
+
+      if (response) {
+        // Extract and send the course details
+        console.log("course details are", response);
+        const course_details = response.course_details;
+        res.json({ message: "Course details fetched successfully", key: 1, course_details });
+      } else {
+        // Handle case where no teacher is found with the given email
+        res.json({ message: "No teacher found with the provided email", key: 0 });
+      }
+    } else {
+      // Handle case where the email is missing in the query
+      res.json({ message: "Email query parameter is required", key: 0 });
+    }
+  } catch (error) {
+    console.error("Error fetching course details:", error);
+    res.status(500).json({ message: "An error occurred while fetching course details", key: 0 });
+  }
+};
+
+
 module.exports = {
   userSignup,
   userLogin,
   userForgetPassword,
-  getUserImage,
-  userUploadImage,
   handleStudentQuery,
+  handleAddFacultyCourse,
+  handleFetchFacultyCourses,
 };

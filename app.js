@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const {userLogin, userSignup, userForgetPassword, userUploadImage, getUserImage, handleStudentQuery} = require('./router')
+const {userLogin, userSignup, userForgetPassword, handleStudentQuery, handleAddFacultyCourse, handleFetchFacultyCourses} = require('./router')
 require("dotenv").config();
 
 const app = express();
@@ -15,10 +15,10 @@ const PORT = process.env.PORT || 3000;
 app.post('/signup', userSignup);
 app.post('/login', userLogin);
 app.post('/forget-password', userForgetPassword);
-app.post('/staff/uploadImage', userUploadImage);
-app.post('/staff/getImage', getUserImage);
 app.post('/query', handleStudentQuery);
+app.post('/add-course', handleAddFacultyCourse)
 
+app.get('/get-courses', handleFetchFacultyCourses)
 app.get('/server', (req, res) => {
   res.json({messgae:"server is up", key:1});
 })
