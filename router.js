@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
 const Teacher = require("./models/teacherSchema");
+const Attendance = require("./models/attendance")
 const studentQuery = require("./models/userQuery");
 const bcrypt = require("bcryptjs");
 const NgrokUrl = require("./models/ngrok_url");
@@ -305,6 +306,73 @@ const fetchServerString = async(req, res) => {
   }
 }
 
+const handleUpdateAttendance = async (req, res) => {
+  const { email, students } = req.body;
+
+  try {
+    // Find the user by email
+    const findUser = await Attendance.findOne({ email });
+
+    if (findUser) {
+      // User exists, update their attendance
+      const newAttendance = {
+        date: new Date(), // Record the current date
+        students: students.map(usn => ({ usn })), // Ensure each student has a usn field
+        note: "no note for now"
+      };
+
+      // Push the new attendance record to the existing attendance array
+      findUser.attendance.push(newAttendance);
+
+      // Save the updated document
+      await findUser.save();
+
+      res.status(200).json({ message: 'Attendance updated successfully.', key:1 });
+    } else {
+      // User does not exist, create a new record
+      const newAttendanceRecord = new Attendance({
+        email,
+        attendance: [{
+          date: new Date(),
+          students: students.map(usn => ({ usn })),
+          note: "no note for now"
+        }]
+      });
+
+      await newAttendanceRecord.save();
+      res.status(201).json({ message: 'New attendance record created successfully.', key:1 });
+    }
+  } catch (error) {
+    console.error('Error updating attendance:', error);
+    res.status(500).json({ message: 'Server error. Please try again later.' , key:0});
+  }
+};
+
+const handleViewAttendance = async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    // Find the attendance record by email
+    const attendanceRecord = await Attendance.findOne({ email });
+
+    if (attendanceRecord) {
+      // If the record is found, return it
+      res.status(200).json({
+        message: 'Attendance record found.',
+        attendance: attendanceRecord.attendance,
+        key:1
+      });
+    } else {
+      // If no record is found, return a 404 response
+      res.status(404).json({ message: 'No attendance record found for this email.', key:0 });
+    }
+  } catch (error) {
+    console.error('Error retrieving attendance:', error);
+    res.status(500).json({ message: 'Server error. Please try again later.', key:0 });
+  }
+};
+
+
 module.exports = {
   userSignup,
   userLogin,
@@ -313,4 +381,6 @@ module.exports = {
   handleAddFacultyCourse,
   handleFetchFacultyCourses,
   fetchServerString,
+  handleUpdateAttendance,
+  handleViewAttendance
 };

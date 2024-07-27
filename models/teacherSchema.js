@@ -10,9 +10,9 @@ const teacherSchema = new mongoose.Schema({
       id: { type: String, unique:true},
       semester: { type: String, },
       strength: {type:Number, default:1},
-      students:{
-        usn:{type:String, unique:true},
-      }
+      students:[
+        {usn:{type:String, unique:true}}
+      ]
     },
   ],
 });

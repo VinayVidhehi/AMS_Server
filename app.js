@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const {userLogin, userSignup, userForgetPassword, handleStudentQuery, handleAddFacultyCourse, handleFetchFacultyCourses, fetchServerString} = require('./router')
+const {userLogin, userSignup, userForgetPassword, handleStudentQuery, handleAddFacultyCourse, handleFetchFacultyCourses, fetchServerString, handleUpdateAttendance, handleViewAttendance} = require('./router')
 require("dotenv").config();
 
 const app = express();
@@ -16,9 +16,11 @@ app.post('/signup', userSignup);
 app.post('/login', userLogin);
 app.post('/forget-password', userForgetPassword);
 app.post('/query', handleStudentQuery);
-app.post('/add-course', handleAddFacultyCourse)
+app.post('/add-course', handleAddFacultyCourse);
+app.post('/update-attendance', handleUpdateAttendance)
 
-app.get('/get-courses', handleFetchFacultyCourses)
+app.get('/get-courses', handleFetchFacultyCourses);
+app.get('/view-attendance', handleViewAttendance);
 app.get('/server', (req, res) => {
   res.json({messgae:"server is up", key:1});
 })

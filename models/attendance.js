@@ -1,18 +1,12 @@
 const mongoose = require('mongoose');
 
-const attendanceRecordSchema = new mongoose.Schema({
-  date: { type: Date, required: true },
-  attendance: [{
-    student_id: { type: mongoose.Schema.Types.ObjectId, ref: 'StudentLogin' },
-    name: { type: String },
-    status: { type: String, enum: ['present', 'absent', 'late'] }
-  }]
-});
-
 const attendanceSchema = new mongoose.Schema({
-  classroom_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Classroom' },
-  classroom_name: { type: String },
-  attendance_records: [attendanceRecordSchema]
-});
+  email: { type: String, required: true, index: true }, // Indexed for quicker search
+  attendance: [{
+    date: { type: Date, required: true, default: Date.now },
+    students: [{ usn: { type: String, required: true } }],
+    note: { type: String, default: '' } // Default empty string if no note is provided
+  }]
+}, { timestamps: true }); // Adds createdAt and updatedAt fields
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
