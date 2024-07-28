@@ -317,7 +317,7 @@ const handleUpdateAttendance = async (req, res) => {
       // User exists, update their attendance
       const newAttendance = {
         date: new Date(), // Record the current date
-        students: students.map(usn => ({ usn })), // Ensure each student has a usn field
+        students, // Ensure each student has a usn field
         note: "no note for now"
       };
 
