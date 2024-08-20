@@ -317,13 +317,12 @@ const storeServerString = async (req, res) => {
 
     // Validate the provided naunce with the environment variable
     if (naunce === process.env.NAUNCE) {
-      const urlString = new NgrokUrl({
-        ngrok_url,
-        is_active: true,
-      });
-
-      // Save the new URL string to the database
-      await urlString.save();
+      // Find the document and update it, or create a new one if it doesn't exist
+      const urlString = await NgrokUrl.findOneAndUpdate(
+        {},
+        { ngrok_url, is_active: true },
+        { upsert: true, new: true }
+      );
 
       return res.status(201).json({ message: "Successfully stored the server URL", key: 1 });
     }
@@ -342,6 +341,7 @@ const storeServerString = async (req, res) => {
     return res.status(500).json({ message: "Internal server error", key: 0 });
   }
 };
+
 
 const handleUpdateAttendance = async (req, res) => {
   const { email, students } = req.body;
