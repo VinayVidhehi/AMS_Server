@@ -306,6 +306,43 @@ const fetchServerString = async(req, res) => {
   }
 }
 
+const storeServerString = async (req, res) => {
+  try {
+    const { ngrok_url, naunce } = req.body;
+
+    // Validate request data
+    if (!ngrok_url || !naunce) {
+      return res.status(400).json({ message: "Missing required fields", key: 0 });
+    }
+
+    // Validate the provided naunce with the environment variable
+    if (naunce === process.env.NAUNCE) {
+      const urlString = new NgrokUrl({
+        ngrok_url,
+        is_active: true,
+      });
+
+      // Save the new URL string to the database
+      await urlString.save();
+
+      return res.status(201).json({ message: "Successfully stored the server URL", key: 1 });
+    }
+
+    // If naunce does not match
+    return res.status(403).json({ message: "Unauthorized to change the server string", key: 0 });
+  } catch (error) {
+    console.error("Error storing server string:", error);
+
+    // Handle different error types accordingly
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: "Validation error: " + error.message, key: 0 });
+    }
+
+    // General error response
+    return res.status(500).json({ message: "Internal server error", key: 0 });
+  }
+};
+
 const handleUpdateAttendance = async (req, res) => {
   const { email, students } = req.body;
 
@@ -381,6 +418,7 @@ module.exports = {
   handleAddFacultyCourse,
   handleFetchFacultyCourses,
   fetchServerString,
+  storeServerString,
   handleUpdateAttendance,
   handleViewAttendance
 };
