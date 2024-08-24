@@ -36,20 +36,23 @@ const transporter = nodemailer.createTransport({
 });
 
 //set mail id and otp to send the email to
-const mailOptions = (email, otp) => {
-  console.log("the email is sss", email, otp);
-  return {
-    from: process.env.SENDER_MAIL_ID,
-    to: email,
-    subject: "OTP verification for Attendance Management System sign up",
-    text: `Your OTP for email verification is: ${otp}`,
-  };
+const mailOptions = (email, otp, mailType) => {
+  if(mailType === 1) {
+    return {
+      from: process.env.SENDER_MAIL_ID,
+      to: email,
+      subject: "OTP verification for Attendance Management System sign up",
+      text: `Your OTP for email verification is: ${otp}`,
+    };
+  } else if(mailType === 2) {
+    //send notification that you were absent for course
+  }
 };
 
 // Send email with response
-async function sendEmail(email, otp) {
+async function sendEmail(email, otp, mailType) {
   try {
-    await transporter.sendMail(mailOptions(email, otp));
+    await transporter.sendMail(mailOptions(email, otp, mailType));
     console.log("Email sent successfully");
     return 1;
   } catch (error) {
@@ -342,70 +345,128 @@ const storeServerString = async (req, res) => {
   }
 };
 
+const addBatch = async (req, res) => {
+  try {
+    const { batch, email } = req.body;
+
+    // Find the teacher by email
+    const user = await Teacher.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ key: 0, message: 'Teacher not found' });
+    }
+
+    // Add the batch to the appropriate course
+    const courseIndex = user.course_details.findIndex(
+      (course) => course.id === batch.courseId
+    );
+
+    if (courseIndex === -1) {
+      return res.status(404).json({ key: 0, message: 'Course not found' });
+    }
+
+    // Add the batch to the course
+    user.course_details[courseIndex].batches.push({
+      batchName: batch.batchName,
+      students: batch.students,
+    });
+
+    // Save the updated document
+    await user.save();
+
+    // Send success response
+    res.json({ key: 1, message: 'Batch added successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ key: 0, message: 'Server error' });
+  }
+};
 
 const handleUpdateAttendance = async (req, res) => {
-  const { email, students } = req.body;
+  const { email, students, batchName } = req.body;
 
-  try {
-    // Find the user by email
-    const findUser = await Attendance.findOne({ email });
-
-    if (findUser) {
-      // User exists, update their attendance
-      const newAttendance = {
-        date: new Date(), // Record the current date
-        students, // Ensure each student has a usn field
-        note: "no note for now"
-      };
-
-      // Push the new attendance record to the existing attendance array
-      findUser.attendance.push(newAttendance);
-
-      // Save the updated document
-      await findUser.save();
-
-      res.status(200).json({ message: 'Attendance updated successfully.', key:1 });
-    } else {
-      // User does not exist, create a new record
-      const newAttendanceRecord = new Attendance({
-        email,
-        attendance: [{
-          date: new Date(),
-          students: students.map(usn => ({ usn })),
+  if(batchName === undefined || !batchName || typeof(batchName) === 'undefined') {
+    try {
+      // Find the user by email
+      const findUser = await Attendance.findOne({ email });
+  
+      if (findUser) {
+        // User exists, update their attendance
+        const newAttendance = {
+          date: new Date(), // Record the current date
+          students, // Ensure each student has a usn field
           note: "no note for now"
-        }]
-      });
-
-      await newAttendanceRecord.save();
-      res.status(201).json({ message: 'New attendance record created successfully.', key:1 });
-    }
-  } catch (error) {
-    console.error('Error updating attendance:', error);
-    res.status(500).json({ message: 'Server error. Please try again later.' , key:0});
+        };
+  
+        // Push the new attendance record to the existing attendance array
+        findUser.attendance.push(newAttendance);
+  
+        // Save the updated document
+        await findUser.save();
+  
+        res.status(200).json({ message: 'Attendance updated successfully.', key:1 });
+      } else {
+        // User does not exist, create a new record
+        const newAttendanceRecord = new Attendance({
+          email,
+          attendance: [{
+            date: new Date(),
+            students: students.map(usn => ({ usn })),
+            note: "no note for now"
+          }]
+        });
+  
+        await newAttendanceRecord.save();
+        res.status(201).json({ message: 'New attendance record created successfully.', key:1 });
+      }
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      res.status(500).json({ message: 'Server error. Please try again later.' , key:0});
+    } 
+  } else {
+      
   }
 };
 
 const handleViewAttendance = async (req, res) => {
-  const { email } = req.query;
+  const { email, isLab } = req.query;
 
   try {
     // Find the attendance record by email
     const attendanceRecord = await Attendance.findOne({ email });
 
     if (attendanceRecord) {
-      // If the record is found, return it
-      res.status(200).json({
-        message: 'Attendance record found.',
-        attendance: attendanceRecord.attendance,
-        key:1
+      // Filter attendance records based on the isLab flag
+      const filteredAttendance = attendanceRecord.attendance.filter((record) => {
+        if (isLab === 'true') {
+          // For lab attendance, filter out records with note 'no note for now'
+          return record.note !== 'no note for now';
+        } else {
+          // For class attendance, only include records with note 'no note for now'
+          return record.note === 'no note for now';
+        }
+      });
+
+      // Return the filtered attendance records with key: 1
+      res.json({
+        message: 'Attendance records found.',
+        attendance: filteredAttendance,
+        key: 1,
       });
     } else {
-      // If no record is found, return a 404 response
-      res.status(404).json({ message: 'No attendance record found for this email.', key:0 });
+      // If no record is found, return key: 0
+      res.json({
+        message: 'No attendance record found for this email.',
+        key: 0,
+      });
     }
   } catch (error) {
     console.error('Error retrieving attendance:', error);
-    res.status(500).json({ message: 'Server error. Please try again later.', key:0 });
+    // Return key: 0 for server error
+    res.json({
+      message: 'Server error. Please try again later.',
+      key: 0,
+    });
   }
 };
 
@@ -420,5 +481,6 @@ module.exports = {
   fetchServerString,
   storeServerString,
   handleUpdateAttendance,
-  handleViewAttendance
+  handleViewAttendance,
+  addBatch
 };
