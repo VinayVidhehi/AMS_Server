@@ -86,7 +86,7 @@ const userSignup = async (req, res) => {
         const otp = generateOTP();
         array.push({ email, otp });
         console.log("the array is ", array, email);
-        const response = sendEmail(email, otp);
+        const response = sendEmail(email, otp, 1);
         if (response == 0)
           res.json({
             message: "error while sending otp, please try again later",
