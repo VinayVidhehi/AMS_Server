@@ -347,40 +347,40 @@ const storeServerString = async (req, res) => {
 
 const addBatch = async (req, res) => {
   try {
-    const { batch, email } = req.body;
+    const { batchName, students, courseId, email } = req.body;
 
-    // Find the teacher by email
-    const user = await Teacher.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({ key: 0, message: 'Teacher not found' });
-    }
-
-    // Add the batch to the appropriate course
-    const courseIndex = user.course_details.findIndex(
-      (course) => course.id === batch.courseId
+    // Find the teacher and update the course batch list
+    const result = await Teacher.findOneAndUpdate(
+      { email, 'course_details.id': courseId }, // Match the teacher and course
+      {
+        $set: {
+          'course_details.$[course].batches.$[batch].students': students
+        },
+        $addToSet: {
+          'course_details.$[course].batches': { batchName, students }
+        }
+      },
+      {
+        arrayFilters: [
+          { 'course.id': courseId },
+          { 'batch.batchName': batchName }
+        ],
+        new: true, // Return the updated document
+        upsert: true // Create if it doesn't exist
+      }
     );
 
-    if (courseIndex === -1) {
-      return res.status(404).json({ key: 0, message: 'Course not found' });
+    if (!result) {
+      return res.status(404).json({ key: 0, message: 'Teacher or Course not found' });
     }
 
-    // Add the batch to the course
-    user.course_details[courseIndex].batches.push({
-      batchName: batch.batchName,
-      students: batch.students,
-    });
-
-    // Save the updated document
-    await user.save();
-
-    // Send success response
-    res.json({ key: 1, message: 'Batch added successfully' });
+    res.json({ key: 1, message: 'Batch added/updated successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ key: 0, message: 'Server error' });
   }
 };
+
 
 const handleUpdateAttendance = async (req, res) => {
   const { email, students, batchName } = req.body;
