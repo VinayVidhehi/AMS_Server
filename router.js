@@ -349,15 +349,18 @@ const addBatch = async (req, res) => {
   try {
     const { batchName, students, courseId, email } = req.body;
 
+    // Map the students array to match the expected schema
+    const studentObjects = students.map(usn => ({ usn }));
+
     // Find the teacher and update the course batch list
     const result = await Teacher.findOneAndUpdate(
-      { email, 'course_details.id': courseId }, // Match the teacher and course
+      { email, 'course_details.id': courseId },
       {
         $set: {
-          'course_details.$[course].batches.$[batch].students': students
+          'course_details.$[course].batches.$[batch].students': studentObjects
         },
         $addToSet: {
-          'course_details.$[course].batches': { batchName, students }
+          'course_details.$[course].batches': { batchName, students: studentObjects }
         }
       },
       {
@@ -365,8 +368,8 @@ const addBatch = async (req, res) => {
           { 'course.id': courseId },
           { 'batch.batchName': batchName }
         ],
-        new: true, // Return the updated document
-        upsert: true // Create if it doesn't exist
+        new: true,
+        upsert: true
       }
     );
 
