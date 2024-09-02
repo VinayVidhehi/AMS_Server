@@ -4,7 +4,7 @@ const attendanceSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true }, // Indexed for quicker search
   courseId: {
     type:String, required:true,
-  }
+  },
   attendance: [{
     date: { type: Date, required: true, default: Date.now },
     students: [{ usn: { type: String, required: true } }],
