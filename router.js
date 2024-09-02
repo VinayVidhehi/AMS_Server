@@ -384,9 +384,8 @@ const addBatch = async (req, res) => {
   }
 };
 
-
 const handleUpdateAttendance = async (req, res) => {
-  const { email, students, batchName } = req.body;
+  const { email, students, batchName, courseId } = req.body;
 
   if(batchName === undefined || !batchName || typeof(batchName) === 'undefined') {
     try {
@@ -412,6 +411,7 @@ const handleUpdateAttendance = async (req, res) => {
         // User does not exist, create a new record
         const newAttendanceRecord = new Attendance({
           email,
+          courseId,
           attendance: [{
             date: new Date(),
             students: students.map(usn => ({ usn })),
