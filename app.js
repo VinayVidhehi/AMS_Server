@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const {userLogin, userSignup, userForgetPassword, handleStudentQuery, handleAddFacultyCourse, handleFetchFacultyCourses, fetchServerString, handleUpdateAttendance, handleViewAttendance, storeServerString, addBatch} = require('./router')
+const {userLogin, userSignup, userForgetPassword, handleStudentQuery, handleAddFacultyCourse, handleFetchFacultyCourses, fetchServerString, handleUpdateAttendance, handleViewAttendance, storeServerString, addBatch, handleViewStudentAttendance} = require('./router')
 require("dotenv").config();
 
 const app = express();
@@ -19,7 +19,8 @@ app.post('/query', handleStudentQuery);
 app.post('/add-course', handleAddFacultyCourse);
 app.post('/update-attendance', handleUpdateAttendance);
 app.post('/store-url', storeServerString);
-app.post('/add-batch', addBatch)
+app.post('/add-batch', addBatch);
+app.post('/get-student-attendance', handleViewStudentAttendance)
 
 app.get('/get-courses', handleFetchFacultyCourses);
 app.get('/server-string', fetchServerString);

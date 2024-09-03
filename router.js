@@ -352,15 +352,27 @@ const addBatch = async (req, res) => {
     // Map the students array to match the expected schema
     const studentObjects = students.map(usn => ({ usn }));
 
-    // Find the teacher and update the course batch list
-    const result = await Teacher.findOneAndUpdate(
-      { email, 'course_details.id': courseId },
+    // First, add or update the batch
+    const addBatchResult = await Teacher.findOneAndUpdate(
+      { email, 'course_details.id': courseId, 'course_details.batches.batchName': { $ne: batchName } },
+      {
+        $addToSet: {
+          'course_details.$[course].batches': { batchName, students: [] }
+        }
+      },
+      {
+        arrayFilters: [{ 'course.id': courseId }],
+        new: true,
+        upsert: true
+      }
+    );
+
+    // Then, update the students array within the batch
+    const updateStudentsResult = await Teacher.findOneAndUpdate(
+      { email, 'course_details.id': courseId, 'course_details.batches.batchName': batchName },
       {
         $set: {
           'course_details.$[course].batches.$[batch].students': studentObjects
-        },
-        $addToSet: {
-          'course_details.$[course].batches': { batchName, students: studentObjects }
         }
       },
       {
@@ -368,12 +380,11 @@ const addBatch = async (req, res) => {
           { 'course.id': courseId },
           { 'batch.batchName': batchName }
         ],
-        new: true,
-        upsert: true
+        new: true
       }
     );
 
-    if (!result) {
+    if (!addBatchResult || !updateStudentsResult) {
       return res.status(404).json({ key: 0, message: 'Teacher or Course not found' });
     }
 
@@ -473,6 +484,14 @@ const handleViewAttendance = async (req, res) => {
   }
 };
 
+const handleViewStudentAttendance = async (req, res) => {
+  const {email} = req.body;
+
+  const response = await Attendance.find();
+  console.log("attendance data is ", response);
+  res.json({message:"attendance fetched successfully", response});
+}
+
 module.exports = {
   userSignup,
   userLogin,
@@ -484,5 +503,6 @@ module.exports = {
   storeServerString,
   handleUpdateAttendance,
   handleViewAttendance,
-  addBatch
+  addBatch,
+  handleViewStudentAttendance,
 };
