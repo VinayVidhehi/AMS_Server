@@ -390,7 +390,7 @@ const handleUpdateAttendance = async (req, res) => {
   if(batchName === undefined || !batchName || typeof(batchName) === 'undefined') {
     try {
       // Find the user by email
-      const findUser = await Attendance.findOne({ email });
+      const findUser = await Attendance.findOne({ email, courseId });
   
       if (findUser) {
         // User exists, update their attendance
