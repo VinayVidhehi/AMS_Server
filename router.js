@@ -414,7 +414,7 @@ const handleUpdateAttendance = async (req, res) => {
           courseId,
           attendance: [{
             date: new Date(),
-            students: students.map(usn => ({ usn })),
+            students,
             note: "no note for now"
           }]
         });
@@ -472,7 +472,6 @@ const handleViewAttendance = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   userSignup,
