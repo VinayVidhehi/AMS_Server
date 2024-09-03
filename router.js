@@ -345,7 +345,7 @@ const storeServerString = async (req, res) => {
 
 const handleUpdateAttendance = async (req, res) => {
   const { email, students } = req.body;
-
+ console.log("students array is", students);
   try {
     // Find the user by email
     const findUser = await Attendance.findOne({ email });
