@@ -438,7 +438,44 @@ const handleUpdateAttendance = async (req, res) => {
       res.status(500).json({ message: 'Server error. Please try again later.' , key:0});
     } 
   } else {
-      
+    try {
+      // Find the user by email
+      const findUser = await Attendance.findOne({ email, courseId });
+  
+      if (findUser) {
+        // User exists, update their attendance
+        const newAttendance = {
+          date: new Date(), // Record the current date
+          students, // Ensure each student has a usn field
+          note: batchName
+        };
+  
+        // Push the new attendance record to the existing attendance array
+        findUser.attendance.push(newAttendance);
+  
+        // Save the updated document
+        await findUser.save();
+  
+        res.status(200).json({ message: 'Attendance updated successfully.', key:1 });
+      } else {
+        // User does not exist, create a new record
+        const newAttendanceRecord = new Attendance({
+          email,
+          courseId,
+          attendance: [{
+            date: new Date(),
+            students,
+            note: batchName
+          }]
+        });
+  
+        await newAttendanceRecord.save();
+        res.status(201).json({ message: 'New attendance record created successfully.', key:1 });
+      }
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      res.status(500).json({ message: 'Server error. Please try again later.' , key:0});
+    } 
   }
 };
 
