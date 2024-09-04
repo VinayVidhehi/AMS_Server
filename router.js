@@ -480,11 +480,11 @@ const handleUpdateAttendance = async (req, res) => {
 };
 
 const handleViewAttendance = async (req, res) => {
-  const { email, isLab } = req.query;
+  const { courseId, isLab } = req.query;
 
   try {
     // Find the attendance record by email
-    const attendanceRecord = await Attendance.findOne({ email });
+    const attendanceRecord = await Attendance.findOne({ courseId });
 
     if (attendanceRecord) {
       // Filter attendance records based on the isLab flag
@@ -507,7 +507,7 @@ const handleViewAttendance = async (req, res) => {
     } else {
       // If no record is found, return key: 0
       res.json({
-        message: 'No attendance record found for this email.',
+        message: 'No attendance record found for this course id ',
         key: 0,
       });
     }
