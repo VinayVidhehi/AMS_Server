@@ -22,7 +22,8 @@ const teacherSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  course_details: [courseDetailsSchema],
+  course_details: { type: [courseDetailsSchema], default: undefined },  // Makes course_details optional
 });
+
 
 module.exports = mongoose.model("Teacher", teacherSchema);
